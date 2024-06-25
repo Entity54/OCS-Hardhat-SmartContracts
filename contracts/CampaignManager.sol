@@ -82,6 +82,8 @@ contract CampaignManager {
     mapping(uint => bool) public isCampaignActive; // uuid => bool
     mapping(uint => uint) public campaignBalances; // uuid => uuid
 
+    mapping(uint => uint) public campaignFidToUid; // campaign fid => campaign uuid
+
     mapping(uint => bool) public isCampaignDistributionComplete; // uuid => bool
     mapping(uint => bool) public isCampaignPaymentsComplete; // uuid => bool
 
@@ -138,6 +140,9 @@ contract CampaignManager {
         campaignPointMarking[campaign_nonce] = _influencerActionsPoints;
 
         campaignBalances[campaign_nonce] += msg.value;
+
+        campaignFidToUid[_campaign_Fid] = campaign_nonce;
+
         campaign_nonce++;
     }
 
