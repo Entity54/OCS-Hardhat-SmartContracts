@@ -1,4 +1,4 @@
-# Hardhat isntructions
+# Hardhat instructions
 
 ### Installation
 

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./CampaignManager.sol";
+import {CampaignState, Campaign} from "./CampaignManager.sol";
 
 enum InfluencersActions {
     Follow,
@@ -19,8 +20,9 @@ contract InfluencersManager {
 
     struct Influencer {
         uint fid;
-        address custodyAddress;
-        address verifiedAddress;
+        address custodyAddress; //farcaster custodyAddress
+        address verifiedAddress; //address to get paid
+        address ownerAddress; //address that registers influencer
         uint spammerFactor;
         uint posId;
     }
@@ -45,46 +47,50 @@ contract InfluencersManager {
         _;
     }
 
-    //TODO Needs Revisitng -- This Needs to call Farcaster with msg.sender and get Fid
-    function registerInfluencer(uint influencer_fid) external {
+    function registerInfluencer(
+        uint influencer_fid,
+        address _custodyAddress,
+        address _verifiedAddress
+    ) external {
         require(
-            influencer_fid != 0 && influencerFids[msg.sender] != 0,
+            influencer_fid != 0 && influencerFids[msg.sender] == 0,
             "Influencer already exists or is invalid"
         );
 
-        influencerAddress[influencer_fid] = msg.sender;
+        influencerAddress[influencer_fid] = _verifiedAddress;
         influencerFids[msg.sender] = influencer_fid;
 
         influencers[influencer_fid] = Influencer({
             fid: influencer_fid,
-            custodyAddress: address(0),
-            verifiedAddress: msg.sender,
+            custodyAddress: _custodyAddress,
+            verifiedAddress: _verifiedAddress, //address to get paid
+            ownerAddress: msg.sender,
             spammerFactor: 1,
             posId: influencersUIDs.length
         });
 
         influencersUIDs.push(influencer_fid);
-
-        //CHAINLINK FUNCTION CHECK TO GO HERE
     }
 
     function registerToCampaign(uint campaign_uuid) external {
-        require(
-            campaignManager.isCampaignActive(campaign_uuid),
-            "Campaign is not active"
-        );
-
         uint influencerFid = influencerFids[msg.sender];
         require(
             !isCampaignInfuencer[campaign_uuid][influencerFid],
-            "Influencer not in campaign"
+            "Influencer already in campaign"
         );
-        isCampaignInfuencer[campaign_uuid][influencerFid] = true;
 
-        campaignManager.registerInfluencerForCampaign(
-            campaign_uuid,
-            influencerFid
-        );
+        Campaign memory campaign = campaignManager.getCampaign(campaign_uuid);
+        if (
+            campaign.state == CampaignState.Pending ||
+            campaign.state == CampaignState.Active
+        ) {
+            isCampaignInfuencer[campaign_uuid][influencerFid] = true;
+
+            campaignManager.registerInfluencerForCampaign(
+                campaign_uuid,
+                influencerFid
+            );
+        }
     }
 
     function awardPoints(
@@ -93,27 +99,28 @@ contract InfluencersManager {
         InfluencersActions actionType,
         uint numFollowers
     ) external OnlyAdmin {
-        require(
-            isCampaignInfuencer[campaign_uuid][influencer_fid] ||
-                campaignManager.isCampaignActive(campaign_uuid),
-            "Influencer not in campaign or campaign not active"
-        );
+        if (
+            isCampaignInfuencer[campaign_uuid][influencer_fid] &&
+            campaignManager.isCampaignActive(campaign_uuid)
+        ) {
+            uint[7] memory marksArray = campaignManager.getCampaignPointMarking(
+                campaign_uuid
+            );
 
-        uint[7] memory marksArray = campaignManager.getCampaignPointMarking(
-            campaign_uuid
-        );
+            uint action_type = uint(actionType);
+            uint basePoints = marksArray[action_type];
+            uint totalPoints = basePoints * numFollowers;
 
-        uint action_type = uint(actionType);
-        uint basePoints = marksArray[action_type];
-        uint totalPoints = basePoints * numFollowers;
+            uint[8] storage influencerPointsArray = campaignScores[
+                campaign_uuid
+            ][influencer_fid];
+            influencerPointsArray[action_type] += totalPoints;
+            influencerPointsArray[
+                influencerPointsArray.length - 1
+            ] += totalPoints; //Total points for influenecer fo this campaign
 
-        uint[8] storage influencerPointsArray = campaignScores[campaign_uuid][
-            influencer_fid
-        ];
-        influencerPointsArray[action_type] += totalPoints;
-        influencerPointsArray[influencerPointsArray.length - 1] += totalPoints;
-
-        total_campaign_score[campaign_uuid] += totalPoints;
+            total_campaign_score[campaign_uuid] += totalPoints; //Total points for campaign
+        }
     }
 
     function deductPoints(
@@ -122,50 +129,49 @@ contract InfluencersManager {
         InfluencersActions actionType,
         uint numFollowers
     ) external OnlyAdmin {
-        require(
-            isCampaignInfuencer[campaign_uuid][influencer_fid] ||
-                campaignManager.isCampaignActive(campaign_uuid),
-            "Influencer not in campaign or campaign not active"
-        );
+        if (
+            isCampaignInfuencer[campaign_uuid][influencer_fid] &&
+            campaignManager.isCampaignActive(campaign_uuid)
+        ) {
+            uint[7] memory marksArray = campaignManager.getCampaignPointMarking(
+                campaign_uuid
+            );
 
-        uint[7] memory marksArray = campaignManager.getCampaignPointMarking(
-            campaign_uuid
-        );
+            Influencer storage _influencer = influencers[influencer_fid];
 
-        Influencer storage _influencer = influencers[influencer_fid];
+            uint action_type = uint(actionType);
+            uint basePoints = marksArray[action_type];
+            uint totalPoints = basePoints * numFollowers;
+            uint totalPointsWithSpammer = totalPoints *
+                _influencer.spammerFactor;
 
-        uint action_type = uint(actionType);
-        uint basePoints = marksArray[action_type];
-        uint totalPoints = basePoints *
-            numFollowers *
-            _influencer.spammerFactor;
-        _influencer.spammerFactor *= 2;
+            _influencer.spammerFactor *= 2;
 
-        uint[8] storage influencerPointsArray = campaignScores[campaign_uuid][
-            influencer_fid
-        ];
+            uint[8] storage influencerPointsArray = campaignScores[
+                campaign_uuid
+            ][influencer_fid];
 
-        if (influencerPointsArray[action_type] < totalPoints) {
-            influencerPointsArray[action_type] = 0;
-        } else {
-            influencerPointsArray[action_type] -= totalPoints;
+            if (influencerPointsArray[action_type] < totalPointsWithSpammer) {
+                influencerPointsArray[action_type] = 0;
+            } else {
+                influencerPointsArray[action_type] -= totalPointsWithSpammer;
+            }
+
+            uint influencer_total_score = influencerPointsArray[
+                influencerPointsArray.length - 1
+            ];
+
+            if (influencer_total_score < totalPointsWithSpammer) {
+                influencer_total_score = 0;
+                _influencer.spammerFactor = 1;
+            } else {
+                influencer_total_score -= totalPointsWithSpammer;
+            }
+
+            influencerPointsArray[
+                influencerPointsArray.length - 1
+            ] = influencer_total_score;
         }
-
-        uint influencer_total_score = influencerPointsArray[
-            influencerPointsArray.length - 1
-        ];
-
-        if (influencer_total_score < totalPoints) {
-            total_campaign_score[campaign_uuid] -= influencer_total_score;
-            influencer_total_score = 0;
-            _influencer.spammerFactor = 1;
-        } else {
-            total_campaign_score[campaign_uuid] -= totalPoints;
-            influencer_total_score -= totalPoints;
-        }
-        influencerPointsArray[
-            influencerPointsArray.length - 1
-        ] = influencer_total_score;
     }
 
     function getCampaignScoresForInfluencer(
@@ -180,6 +186,10 @@ contract InfluencersManager {
         uint fid
     ) external view returns (uint) {
         return campaignScores[campaign_uuid][fid][7];
+    }
+
+    function get_influencersUIDs() external view returns (uint[] memory) {
+        return influencersUIDs;
     }
 
     function setCampaignManager(address _campaignManager) external OnlyAdmin {
