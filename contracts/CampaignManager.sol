@@ -149,12 +149,12 @@ contract CampaignManager {
     }
 
     // Activate a Campaign
-    function checkPendingCampainStatus(uint _uuid) external {
+    function checkPendingCampainStatus(uint _uuid) external returns (bool) {
         Campaign storage _campaign = campaigns[_uuid];
         if (
             _campaign.owner != address(0) &&
             _campaign.state == CampaignState.Pending &&
-            _campaign.startTime >= block.timestamp
+            block.timestamp >= _campaign.startTime
         ) {
             deleteElementFromArray(pendingCampaignUIDs, _campaign.posId);
 
@@ -165,16 +165,18 @@ contract CampaignManager {
             isCampaignActive[_uuid] = true;
 
             campaignAssets.addTo_activeCampaignFids(_campaign.campaign_Fid);
+
+            return true;
         }
+        return false;
     }
 
     // Expire a Campaign
-    function checkActiveCampainStatus(uint _uuid) external {
+    function checkActiveCampainStatus(uint _uuid) external returns (bool) {
         Campaign storage _campaign = campaigns[_uuid];
         if (
-            _campaign.owner != address(0) &&
-            _campaign.state == CampaignState.Active
-            // && _campaign.endTime >= block.timestamp
+            _campaign.state == CampaignState.Active &&
+            block.timestamp >= _campaign.endTime
         ) {
             deleteElementFromArray(activeCampaignUIDs, _campaign.posId);
 
@@ -186,7 +188,10 @@ contract CampaignManager {
             campaignAssets.deleteFrom_activeCampaignFids(
                 _campaign.campaign_Fid
             );
+
+            return true;
         }
+        return false;
     }
 
     // Register an Influencer for a Campaign
@@ -207,7 +212,7 @@ contract CampaignManager {
         _campaign.influencersFids.push(_fid); //TODO checks if already infuencer in the InfluencerManager
     }
 
-    function checkExpiredCampainStatus(uint _uuid) public {
+    function checkExpiredCampainStatus(uint _uuid) public returns (bool) {
         Campaign storage _campaign = campaigns[_uuid];
         if (
             _campaign.state == CampaignState.Expired &&
@@ -222,10 +227,13 @@ contract CampaignManager {
             if (_campaign.influencersFids.length == 0)
                 _campaign.state = CampaignState.Void; //campaign manaer can withdraw funds
             else _campaign.state = CampaignState.ReadyForPayment;
+
+            return true;
         }
+        return false;
     }
 
-    function calculateDistributions(uint _uuid) external {
+    function calculateDistributions(uint _uuid) external returns (bool) {
         Campaign storage _campaign = campaigns[_uuid];
 
         if (
@@ -261,35 +269,37 @@ contract CampaignManager {
 
             isCampaignDistributionComplete[_uuid] = true;
             checkExpiredCampainStatus(_uuid);
+
+            return true;
         }
+        return false;
     }
 
-    function makePayments(uint _uuid) external {
+    function makePayments(uint _uuid) external returns (bool) {
         Campaign storage _campaign = campaigns[_uuid];
-
-        require(
+        if (
             _campaign.state == CampaignState.ReadyForPayment &&
-                isCampaignPaymentsComplete[_uuid] == false,
-            "Campaign is not ready for payment or already paid out"
-        );
+            isCampaignPaymentsComplete[_uuid] == false
+        ) {
+            uint[] memory influencersFids = _campaign.influencersFids;
+            uint[] memory distributions = _campaign.distributions;
 
-        uint[] memory influencersFids = _campaign.influencersFids;
-        uint[] memory distributions = _campaign.distributions;
+            for (uint i = 0; i < influencersFids.length; i++) {
+                address influencerAddress = influencersManager
+                    .influencerAddress(influencersFids[i]);
+                payable(influencerAddress).transfer(distributions[i]);
+            }
 
-        for (uint i = 0; i < influencersFids.length; i++) {
-            address influencerAddress = influencersManager.influencerAddress(
-                influencersFids[i]
-            );
-            payable(influencerAddress).transfer(distributions[i]);
+            isCampaignPaymentsComplete[_uuid] = true;
+
+            platform_Balance[address(this)] += platform_campaign_fees[_uuid];
+            campaignBalances[_uuid] = 0;
+            return true;
         }
-
-        isCampaignPaymentsComplete[_uuid] = true;
-
-        platform_Balance[address(this)] += platform_campaign_fees[_uuid];
-        campaignBalances[_uuid] = 0;
+        return false;
     }
 
-    function checkReadyForPaymentStatus(uint _uuid) public {
+    function checkReadyForPaymentStatus(uint _uuid) public returns (bool) {
         Campaign storage _campaign = campaigns[_uuid];
         if (
             (_campaign.state == CampaignState.ReadyForPayment &&
@@ -307,7 +317,10 @@ contract CampaignManager {
 
             if (_campaign.state == CampaignState.ReadyForPayment)
                 _campaign.state = CampaignState.Paid;
+
+            return true;
         }
+        return false;
     }
 
     function deleteElementFromArray(uint[] storage arr, uint index) internal {
