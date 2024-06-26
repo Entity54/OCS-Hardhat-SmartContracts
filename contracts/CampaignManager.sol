@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./InfluencersManager.sol";
+import "./CampaignAssets.sol";
 
 // import {InfluencersActions} from "./InfluencersManager.sol";
 
@@ -32,6 +33,7 @@ struct Campaign {
 
 contract CampaignManager {
     InfluencersManager public influencersManager;
+    CampaignAssets public campaignAssets;
 
     address public admin;
     uint public fees_percentage = 10;
@@ -161,6 +163,8 @@ contract CampaignManager {
             activeCampaignUIDs.push(_uuid);
 
             isCampaignActive[_uuid] = true;
+
+            campaignAssets.addTo_activeCampaignFids(_campaign.campaign_Fid);
         }
     }
 
@@ -179,6 +183,9 @@ contract CampaignManager {
             expiredCampaignUIDs.push(_uuid);
 
             isCampaignActive[_uuid] = false;
+            campaignAssets.deleteFrom_activeCampaignFids(
+                _campaign.campaign_Fid
+            );
         }
     }
 
@@ -374,12 +381,16 @@ contract CampaignManager {
         return campaigns[_uuid];
     }
 
-    // influencersFids: _influencersFids,
-    // distributions: _distributions,
+    function getCampaign_Infuencers_FromFid(
+        uint fid
+    ) external view returns (uint[] memory) {
+        uint campaign_uuid = campaignFidToUid[fid];
+        return getCampaign_influencersFids(campaign_uuid);
+    }
 
     function getCampaign_influencersFids(
         uint _uuid
-    ) external view returns (uint[] memory) {
+    ) public view returns (uint[] memory) {
         return campaigns[_uuid].influencersFids;
     }
 
@@ -397,6 +408,10 @@ contract CampaignManager {
         address _influencersManager
     ) external OnlyAdmin {
         influencersManager = InfluencersManager(_influencersManager);
+    }
+
+    function setCampaignAssets(address _campaignAssets) external OnlyAdmin {
+        campaignAssets = CampaignAssets(_campaignAssets);
     }
 
     function changeAdmin(address _newAdmin) external OnlyAdmin {

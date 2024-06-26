@@ -23,6 +23,8 @@ contract CampaignAssets {
     }
 
     uint[] public campaignUIDs;
+    uint[] public activeCampaignFIDs;
+
     mapping(uint => string) public campaignTagLine; // uuid => tagline
     mapping(uint => string) public campaignEmbed; // uuid => emded url
     mapping(uint => bool) public campaignHasRegisteredWebhookdata;
@@ -41,6 +43,26 @@ contract CampaignAssets {
     modifier OnlyAdmins() {
         require(isAdministrator[msg.sender], "You aren't an admin");
         _;
+    }
+
+    function addTo_activeCampaignFids(uint campaign_fid) external {
+        activeCampaignFIDs.push(campaign_fid);
+    }
+
+    function deleteFrom_activeCampaignFids(uint campaign_fid) external {
+        bool elemnentfound = false;
+        for (uint i = 0; i < activeCampaignFIDs.length; i++) {
+            if (activeCampaignFIDs[i] == campaign_fid) {
+                activeCampaignFIDs[i] = activeCampaignFIDs[
+                    activeCampaignFIDs.length - 1
+                ];
+                elemnentfound = true;
+                break;
+            }
+        }
+        if (elemnentfound) {
+            activeCampaignFIDs.pop();
+        }
     }
 
     function registerWebhookData(
@@ -122,6 +144,10 @@ contract CampaignAssets {
 
     function get_campaignUIDs() external view returns (uint[] memory) {
         return campaignUIDs;
+    }
+
+    function get_activeCampaignFIDs() external view returns (uint[] memory) {
+        return activeCampaignFIDs;
     }
 
     function setCampaignManager(address _campaignManager) external OnlyAdmin {
