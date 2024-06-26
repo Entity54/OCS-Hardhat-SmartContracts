@@ -25,8 +25,16 @@ contract CampaignAssets {
     uint[] public campaignUIDs;
     uint[] public activeCampaignFIDs;
 
-    mapping(uint => string) public campaignTagLine; // uuid => tagline
-    mapping(uint => string) public campaignEmbed; // uuid => emded url
+    //TagLines
+    string[] public tagLines;
+    mapping(uint => string) public campaignTagLine_uuid; // campaign_uuid => tagline
+    mapping(string => uint[2]) public campaignTagLine_string; // tagline => [campaign_uuid, campaign_fid]
+
+    //Embeds
+    string[] public embeds;
+    mapping(uint => string) public campaignEmbed_uuid; // uuid => emded url
+    mapping(string => uint[2]) public campaignEmbed_string; // embed url => [campaign_uuid, campaign_fid]
+
     mapping(uint => bool) public campaignHasRegisteredWebhookdata;
     mapping(uint => WebhookData) public campaignWebhookdata;
 
@@ -104,8 +112,21 @@ contract CampaignAssets {
 
                 campaignUIDs.push(_campaign_uuid);
 
-                campaignTagLine[_campaign_uuid] = _cast_created_text;
-                campaignEmbed[_campaign_uuid] = _cast_created_parent_embeds;
+                campaignTagLine_uuid[_campaign_uuid] = _cast_created_text;
+                campaignTagLine_string[_cast_created_text] = [
+                    _campaign_uuid,
+                    _campaing_fid
+                ];
+                tagLines.push(_cast_created_text);
+
+                campaignEmbed_uuid[
+                    _campaign_uuid
+                ] = _cast_created_parent_embeds;
+                campaignEmbed_string[_cast_created_parent_embeds] = [
+                    _campaign_uuid,
+                    _campaing_fid
+                ];
+                embeds.push(_cast_created_parent_embeds);
             }
         }
     }
@@ -131,9 +152,45 @@ contract CampaignAssets {
             campaignUIDs.pop();
 
             delete campaignWebhookdata[_campaign_uuid];
-            delete campaignTagLine[_campaign_uuid];
-            delete campaignEmbed[_campaign_uuid];
+
+            delete campaignTagLine_uuid[_campaign_uuid];
+            delete campaignTagLine_string[_campaignWHdata.cast_created_text];
+            deleteElementFromArray(tagLines, _campaignWHdata.cast_created_text);
+
+            delete campaignEmbed_uuid[_campaign_uuid];
+            delete campaignEmbed_string[
+                _campaignWHdata.cast_created_parent_embeds
+            ];
+            deleteElementFromArray(
+                embeds,
+                _campaignWHdata.cast_created_parent_embeds
+            );
         }
+    }
+
+    function deleteElementFromArray(
+        string[] storage arr,
+        string memory element
+    ) internal {
+        bool elementFound = false;
+        uint length = arr.length;
+        for (uint i = 0; i < length; i++) {
+            if (compareStrings(arr[i], element)) {
+                arr[i] = arr[length - 1];
+                elementFound = true;
+                break;
+            }
+        }
+        if (elementFound) {
+            arr.pop();
+        }
+    }
+
+    function compareStrings(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
+        return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
     function getCampaignWebhookData(
@@ -148,6 +205,14 @@ contract CampaignAssets {
 
     function get_activeCampaignFIDs() external view returns (uint[] memory) {
         return activeCampaignFIDs;
+    }
+
+    function get_tagLines() external view returns (string[] memory) {
+        return tagLines;
+    }
+
+    function get_embeds() external view returns (string[] memory) {
+        return embeds;
     }
 
     function setCampaignManager(address _campaignManager) external OnlyAdmin {
