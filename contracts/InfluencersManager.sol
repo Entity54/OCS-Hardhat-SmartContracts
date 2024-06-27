@@ -8,10 +8,10 @@ enum InfluencersActions {
     Follow,
     Like,
     Recast,
+    Cast_Reply,
     Cast_Mention,
-    Cast_Contains_Text,
     Cast_Contains_Embed,
-    Cast_Reply
+    Cast_Contains_Text
 }
 
 contract InfluencersManager {

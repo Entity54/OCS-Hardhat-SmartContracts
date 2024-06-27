@@ -5,8 +5,8 @@ import "./CampaignManager.sol";
 import {CampaignState, Campaign} from "./CampaignManager.sol";
 
 contract CampaignAssets {
-    CampaignManager public campaignManager;
-    address public admin;
+CampaignManager public campaignManager;
+address public admin;
 
     struct WebhookData {
         uint campaign_uuid;
@@ -215,18 +215,6 @@ contract CampaignAssets {
         return embeds;
     }
 
-    function for_givenEmbedURL_get_uuidfid(
-        string memory embed_url
-    ) external view returns (uint[2] memory) {
-        return campaignEmbed_string[embed_url];
-    }
-
-    function for_givenTagLine_get_uuidfid(
-        string memory tag_line
-    ) external view returns (uint[2] memory) {
-        return campaignTagLine_string[tag_line];
-    }
-
     function setCampaignManager(address _campaignManager) external OnlyAdmin {
         campaignManager = CampaignManager(_campaignManager);
     }
@@ -242,4 +230,5 @@ contract CampaignAssets {
         );
         isAdministrator[newAdministrator] = !isAdministrator[newAdministrator];
     }
+
 }

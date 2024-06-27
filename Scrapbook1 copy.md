@@ -8,9 +8,9 @@ import {InfluencersActions} from "./InfluencersManager.sol";
 import "./CampaignAssets.sol";
 
 contract SquawkProcessor {
-    CampaignManager public campaignManager;
-    InfluencersManager public influencersManager;
-    CampaignAssets public campaignAssets;
+CampaignManager public campaignManager;
+InfluencersManager public influencersManager;
+CampaignAssets public campaignAssets;
 
     address public admin;
     uint public nonce;
@@ -64,7 +64,6 @@ contract SquawkProcessor {
                 : 0;
             uint endRange = lastProcessedIndex + range;
 
-            //Award Ponts for the squawk data
             for (uint i = startRange; i < endRange; i++) {
                 squawkBox[i].processed = 1; // Mark as processed 1: processed, 0: not processed
 
@@ -93,10 +92,10 @@ contract SquawkProcessor {
                         campaign_fid
                     );
 
-                    influencersManager.deductPoints(
+                    influencersManager.awardPoints(
                         campaign_uuid,
                         squawkmsg.user_fid,
-                        InfluencersActions.Follow,
+                        InfluencersActions.UnFollow,
                         squawkmsg.user_followers
                     );
                 } else if (squawkBox[i].code == 16 || squawkBox[i].code == 17) {
@@ -124,10 +123,10 @@ contract SquawkProcessor {
                     );
 
                     InfluencersActions actionType = squawkmsg.code == 18
-                        ? InfluencersActions.Like
-                        : InfluencersActions.Recast;
+                        ? InfluencersActions.Unlike
+                        : InfluencersActions.UnRecact;
 
-                    influencersManager.deductPoints(
+                    influencersManager.awardPoints(
                         campaign_uuid,
                         squawkmsg.user_fid,
                         actionType,
@@ -161,12 +160,9 @@ contract SquawkProcessor {
                     );
                 } else if (squawkBox[i].code == 21) {
                     // EMBEDS
-                    // NEED campaign_uuid
-
+                    // NEED THIS campaign_uuid
                     uint[2] memory campaign_data = campaignAssets
-                        .for_givenEmbedURL_get_uuidfid(
-                            squawkmsg.embeded_string
-                        );
+                        .campaignEmbed_string(squawkmsg.embeded_string);
                     uint campaign_uuid = campaign_data[0];
 
                     //Check if campaign is active
@@ -184,9 +180,9 @@ contract SquawkProcessor {
                     }
                 } else if (squawkBox[i].code == 23) {
                     // TAGLINE
-                    // NEED campaign_uuid
+                    // NEED THIS campaign_uuid
                     uint[2] memory campaign_data = campaignAssets
-                        .for_givenTagLine_get_uuidfid(squawkmsg.embeded_string);
+                        .campaignEmbed_string(squawkmsg.embeded_string);
                     uint campaign_uuid = campaign_data[0];
 
                     //Check if campaign is active
@@ -266,14 +262,5 @@ contract SquawkProcessor {
     function changeAdmin(address _newAdmin) external onlyAdmin {
         admin = _newAdmin;
     }
-}
 
-//Do not forget in all the below we add 1 element as nonce and 1 more (the last element) as 0 for unprocessed and 1 for processed
-// for_sc = [created_at, 14, user_fid, user_followed, user_followers];                                                    //FOLLOW
-// for_sc = [created_at, 15, user_fid, user_unfollowed, user_followers];                                                  // UNFOLLOW
-// for_sc = [created_at, (data.reaction_type === 1? 16 : 17), user_fid, data.cast.hash, cast_author_fid, user_followers]. // handle_Reaction_Created
-// for_sc = [created_at, (data.reaction_type === 1? 18 : 19), user_fid, data.cast.hash, cast_author_fid, user_followers]  // handle_Reaction_Deleted
-// for_sc = [created_at, 20, user_fid, data.hash,  data.parent_hash, replyToAuthorFid, user_followers]                    // handle_CastCreated - REPLY
-// for_sc = [created_at, 21, data.author.fid, data.hash, embed, user_followers]                                           // handle_CastCreated - EMBEDS
-// for_sc = [created_at, 22, user_fid, data.hash, mentionedFid, user_followers]                                           // handle_CastCreated - MENTIONS
-// for_sc = [created_at, 23, data.author.fid, data.hash, tagline, user_followers ]
+}
