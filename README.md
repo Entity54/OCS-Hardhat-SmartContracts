@@ -23,3 +23,11 @@ npx hardhat ignition deploy ./ignition/modules/Lock.js
 ```
  $npx hardhat compile
 ```
+
+The easiest ways is
+
+```
+npx hardhat run  scripts/deploy_all_and_inititate.js --network base-sepolia
+```
+
+deployes all scs and initiates relevant addresses so scs are ready for use

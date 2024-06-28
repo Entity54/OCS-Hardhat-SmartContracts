@@ -1,0 +1,106 @@
+{
+  "CampaignManager": {
+    "hardhat": {
+      "networkName": "hardhat",
+      "chainId": 31337,
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": "2024-06-28T16:32:30.606Z"
+    },
+    "base-sepolia": {
+      "networkName": "base-sepolia",
+      "chainId": 84532,
+      "address": "0x3127e2Bd14e2d7033Ce46fE464C4930eE00aEeD5",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": "2024-06-28T17:17:25.583Z"
+    },
+    "base": {
+      "networkName": "base",
+      "chainId": 8453,
+      "address": "0x63511Db89a9052b6193DbebB75bC6F771639ACC7",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": ""
+    }
+  },
+  "InfluencersManager": {
+    "hardhat": {
+      "networkName": "hardhat",
+      "chainId": 31337,
+      "address": "",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": ""
+    },
+    "base-sepolia": {
+      "networkName": "base-sepolia",
+      "chainId": 84532,
+      "address": "0xe647C25f20F2db2Ee7D2DDec828237AE8Cb84EB3",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": "2024-06-28T17:17:25.583Z"
+    },
+    "base": {
+      "networkName": "base",
+      "chainId": 8453,
+      "address": "0x47d931A02Bf69598aBF8935909aA95E6b14D0F16",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": ""
+    }
+  },
+  "CampaignAssets": {
+    "hardhat": {
+      "networkName": "hardhat",
+      "chainId": 31337,
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": "2024-06-28T16:32:25.714Z"
+    },
+    "base-sepolia": {
+      "networkName": "base-sepolia",
+      "chainId": 84532,
+      "address": "0xd83Dc9e2a834169a15a301048237516b26Ceb75f",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": "2024-06-28T17:17:25.583Z"
+    },
+    "base": {
+      "networkName": "base",
+      "chainId": 8453,
+      "address": "0x714E39cdfE2A6a6889fcD12030541aFa6A51cB01",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": ""
+    }
+  },
+  "SquawkProcessor": {
+    "hardhat": {
+      "networkName": "hardhat",
+      "chainId": 31337,
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": "2024-06-28T16:27:35.989Z"
+    },
+    "base-sepolia": {
+      "networkName": "base-sepolia",
+      "chainId": 84532,
+      "address": "0xc7dd695c59b062c65928565c64629ec808300524",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": "2024-06-28T17:17:25.583Z"
+    },
+    "base": {
+      "networkName": "base",
+      "chainId": 8453,
+      "address": "0x8963FFB8b57ad1eB7E451F58c4aA64D8a7B5eD9d",
+      "constructorArguments": [],
+      "value": "0",
+      "timestamp": ""
+    }
+  }
+}

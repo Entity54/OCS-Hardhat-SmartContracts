@@ -1,7 +1,8 @@
 const hre = require("hardhat");
 const crudJSON = require(__dirname + `/utils/crudJSON.js`);
 
-const scName = "CampaignAssets";
+
+const scName = "SquawkProcessor";
 
 const networkName = hre.network.name
 const chainId = hre.network.config.chainId
@@ -40,8 +41,10 @@ main().catch((error) => {
 });
 
 
-// npx hardhat run  scripts/deploy_CampaignAssets.js --network base-sepolia  
+
+// npx hardhat run  scripts/deploy_SquawkProcessor.js --network base-sepolia  
 // Shift+Option+F to format code in VSCode
+
 
 const save_server_logs = (message) => {
   const datafilePath = __dirname + `/deployments/DeploymentLogs.txt`;

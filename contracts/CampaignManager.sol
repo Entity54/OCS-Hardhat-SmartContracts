@@ -74,6 +74,9 @@ contract CampaignManager {
     //     uint posId;
     // }
 
+    uint[] public startTimes;
+    uint[] public endTimes;
+
     uint[] public pendingCampaignUIDs;
     uint[] public activeCampaignUIDs;
     uint[] public expiredCampaignUIDs;
@@ -146,10 +149,13 @@ contract CampaignManager {
         campaignFidToUid[_campaign_Fid] = campaign_nonce;
 
         campaign_nonce++;
+
+        startTimes.push(_startTime);
+        endTimes.push(_endTime);
     }
 
     // Activate a Campaign
-    function checkPendingCampainStatus(uint _uuid) external returns (bool) {
+    function checkPendingCampainStatus(uint _uuid) external {
         Campaign storage _campaign = campaigns[_uuid];
         if (
             _campaign.owner != address(0) &&
@@ -165,14 +171,11 @@ contract CampaignManager {
             isCampaignActive[_uuid] = true;
 
             campaignAssets.addTo_activeCampaignFids(_campaign.campaign_Fid);
-
-            return true;
         }
-        return false;
     }
 
     // Expire a Campaign
-    function checkActiveCampainStatus(uint _uuid) external returns (bool) {
+    function checkActiveCampainStatus(uint _uuid) external {
         Campaign storage _campaign = campaigns[_uuid];
         if (
             _campaign.state == CampaignState.Active &&
@@ -188,10 +191,7 @@ contract CampaignManager {
             campaignAssets.deleteFrom_activeCampaignFids(
                 _campaign.campaign_Fid
             );
-
-            return true;
         }
-        return false;
     }
 
     // Register an Influencer for a Campaign
@@ -212,10 +212,11 @@ contract CampaignManager {
         _campaign.influencersFids.push(_fid); //TODO checks if already infuencer in the InfluencerManager
     }
 
-    function checkExpiredCampainStatus(uint _uuid) public returns (bool) {
+    function checkExpiredCampainStatus(uint _uuid) public {
         Campaign storage _campaign = campaigns[_uuid];
         if (
-            _campaign.state == CampaignState.Expired &&
+            (_campaign.state == CampaignState.Expired ||
+                _campaign.state == CampaignState.Void) &&
             isCampaignDistributionComplete[_uuid] == true
         ) {
             //remove from Expired and move it to ReadyForPayment
@@ -224,16 +225,12 @@ contract CampaignManager {
             _campaign.posId = readyFroPaymentCampaignUIDs.length;
             readyFroPaymentCampaignUIDs.push(_uuid);
 
-            if (_campaign.influencersFids.length == 0)
-                _campaign.state = CampaignState.Void; //campaign manaer can withdraw funds
-            else _campaign.state = CampaignState.ReadyForPayment;
-
-            return true;
+            if (_campaign.state == CampaignState.Expired)
+                _campaign.state = CampaignState.ReadyForPayment;
         }
-        return false;
     }
 
-    function calculateDistributions(uint _uuid) external returns (bool) {
+    function calculateDistributions(uint _uuid) external {
         Campaign storage _campaign = campaigns[_uuid];
 
         if (
@@ -252,30 +249,29 @@ contract CampaignManager {
             );
             uint budgetleft = budget;
 
-            for (uint i = 0; i < influencersFids.length - 1; i++) {
-                uint score = influencersManager
-                    .getTotalCampaignScoresForInfluencer(
-                        _uuid,
-                        influencersFids[i]
-                    );
+            if (total_campaign_score > 0) {
+                for (uint i = 0; i < influencersFids.length - 1; i++) {
+                    uint score = influencersManager
+                        .getTotalCampaignScoresForInfluencer(
+                            _uuid,
+                            influencersFids[i]
+                        );
 
-                uint allocation = (score * budget) / total_campaign_score;
-                distributions[i] = allocation;
-                budgetleft -= allocation;
-            }
-            distributions[influencersFids.length - 1] = budgetleft;
+                    uint allocation = (score * budget) / total_campaign_score;
+                    distributions[i] = allocation;
+                    budgetleft -= allocation;
+                }
+                distributions[influencersFids.length - 1] = budgetleft;
 
-            _campaign.distributions = distributions;
+                _campaign.distributions = distributions;
+            } else _campaign.state = CampaignState.Void;
 
             isCampaignDistributionComplete[_uuid] = true;
             checkExpiredCampainStatus(_uuid);
-
-            return true;
         }
-        return false;
     }
 
-    function makePayments(uint _uuid) external returns (bool) {
+    function makePayments(uint _uuid) external {
         Campaign storage _campaign = campaigns[_uuid];
         if (
             _campaign.state == CampaignState.ReadyForPayment &&
@@ -294,12 +290,10 @@ contract CampaignManager {
 
             platform_Balance[address(this)] += platform_campaign_fees[_uuid];
             campaignBalances[_uuid] = 0;
-            return true;
         }
-        return false;
     }
 
-    function checkReadyForPaymentStatus(uint _uuid) public returns (bool) {
+    function checkReadyForPaymentStatus(uint _uuid) public {
         Campaign storage _campaign = campaigns[_uuid];
         if (
             (_campaign.state == CampaignState.ReadyForPayment &&
@@ -317,10 +311,7 @@ contract CampaignManager {
 
             if (_campaign.state == CampaignState.ReadyForPayment)
                 _campaign.state = CampaignState.Paid;
-
-            return true;
         }
-        return false;
     }
 
     function deleteElementFromArray(uint[] storage arr, uint index) internal {
@@ -354,6 +345,28 @@ contract CampaignManager {
         uint fees = platform_Balance[address(this)];
         platform_Balance[address(this)] = 0;
         payable(admin).transfer(fees);
+    }
+
+    function deleteStartOrEndTime(
+        bool isStartTime,
+        uint index
+    ) external OnlyAdmins {
+        uint[] storage arr = isStartTime ? startTimes : endTimes;
+
+        uint lastPosition = arr.length - 1;
+        if (index < lastPosition) {
+            uint lastItemValue = arr[lastPosition];
+            arr[index] = lastItemValue;
+        }
+        arr.pop();
+    }
+
+    function get_startTimes() external view returns (uint[] memory) {
+        return startTimes;
+    }
+
+    function get_endTimes() external view returns (uint[] memory) {
+        return endTimes;
     }
 
     function get_pendingCampaignUIDs() external view returns (uint[] memory) {
