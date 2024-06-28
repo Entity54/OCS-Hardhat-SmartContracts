@@ -38,12 +38,19 @@ contract InfluencersManager {
     mapping(uint => mapping(uint => uint[8])) public campaignScores;
     mapping(uint => uint) public total_campaign_score; //campaign_uuid => total points from all influencers
 
+    mapping(address => bool) public isAdministrator; //accounts with sub-administrator role
+
     constructor() {
         admin = msg.sender;
+        isAdministrator[msg.sender] = true;
     }
 
     modifier OnlyAdmin() {
         require(msg.sender == admin, "You aren't the admin");
+        _;
+    }
+    modifier OnlyAdmins() {
+        require(isAdministrator[msg.sender], "You aren't an admin");
         _;
     }
 
@@ -98,7 +105,7 @@ contract InfluencersManager {
         uint influencer_fid,
         InfluencersActions actionType,
         uint numFollowers
-    ) external OnlyAdmin {
+    ) external OnlyAdmins {
         if (
             isCampaignInfuencer[campaign_uuid][influencer_fid] &&
             campaignManager.isCampaignActive(campaign_uuid)
@@ -128,7 +135,7 @@ contract InfluencersManager {
         uint influencer_fid,
         InfluencersActions actionType,
         uint numFollowers
-    ) external OnlyAdmin {
+    ) external OnlyAdmins {
         if (
             isCampaignInfuencer[campaign_uuid][influencer_fid] &&
             campaignManager.isCampaignActive(campaign_uuid)
@@ -198,5 +205,13 @@ contract InfluencersManager {
 
     function changeAdmin(address _newAdmin) external OnlyAdmin {
         admin = _newAdmin;
+    }
+
+    function toggleAdministrator(address newAdministrator) external OnlyAdmin {
+        require(
+            admin != newAdministrator,
+            "action only for toggling external administrators"
+        );
+        isAdministrator[newAdministrator] = !isAdministrator[newAdministrator];
     }
 }

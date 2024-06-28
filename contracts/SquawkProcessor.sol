@@ -31,16 +31,23 @@ contract SquawkProcessor {
 
     Squawk[] public squawkBox;
 
+    mapping(address => bool) public isAdministrator; //accounts with sub-administrator role
+
     constructor() {
         admin = msg.sender;
+        isAdministrator[msg.sender] = true;
     }
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "You aren't the admin");
         _;
     }
+    modifier OnlyAdmins() {
+        require(isAdministrator[msg.sender], "You aren't an admin");
+        _;
+    }
 
-    function addSquawkData(Squawk[] memory newSquawks) external onlyAdmin {
+    function addSquawkData(Squawk[] memory newSquawks) external OnlyAdmins {
         for (uint i = 0; i < newSquawks.length; i++) {
             newSquawks[i].nonce = nonce;
             newSquawks[i].processed = 0; // Ensure processed is set to 0
@@ -50,8 +57,11 @@ contract SquawkProcessor {
     }
 
     // Pass _range = 0 to process all the squawk data
-    function processSquawkData(uint _range) external onlyAdmin returns (bool) {
-        if (squawkBox.length > 0 && lastProcessedIndex < nonce) {
+    function processSquawkData(uint _range) external OnlyAdmins returns (bool) {
+        if (
+            squawkBox.length > 0 &&
+            (lastProcessedIndex + 1 < nonce || squawkBox[0].processed == 0)
+        ) {
             uint range = _range;
 
             if (range == 0) range = nonce - lastProcessedIndex;
@@ -66,14 +76,12 @@ contract SquawkProcessor {
 
             //Award Ponts for the squawk data
             for (uint i = startRange; i < endRange; i++) {
-                squawkBox[i].processed = 1; // Mark as processed 1: processed, 0: not processed
-
                 Squawk memory squawkmsg = squawkBox[i];
 
                 uint campaign_fid = 0;
 
                 // Do the points awarding here start
-                if (squawkBox[i].code == 14) {
+                if (squawkmsg.code == 14 && squawkmsg.processed == 0) {
                     // FOLLOW
                     campaign_fid = squawkmsg.data[0];
                     uint campaign_uuid = campaignManager.campaignFidToUid(
@@ -86,7 +94,7 @@ contract SquawkProcessor {
                         InfluencersActions.Follow,
                         squawkmsg.user_followers
                     );
-                } else if (squawkBox[i].code == 15) {
+                } else if (squawkmsg.code == 15 && squawkmsg.processed == 0) {
                     // UNFOLLOW
                     campaign_fid = squawkmsg.data[0];
                     uint campaign_uuid = campaignManager.campaignFidToUid(
@@ -99,7 +107,10 @@ contract SquawkProcessor {
                         InfluencersActions.Follow,
                         squawkmsg.user_followers
                     );
-                } else if (squawkBox[i].code == 16 || squawkBox[i].code == 17) {
+                } else if (
+                    (squawkmsg.code == 16 || squawkmsg.code == 17) &&
+                    squawkmsg.processed == 0
+                ) {
                     // REACTION
                     campaign_fid = squawkmsg.data[0];
                     uint campaign_uuid = campaignManager.campaignFidToUid(
@@ -116,7 +127,10 @@ contract SquawkProcessor {
                         actionType,
                         squawkmsg.user_followers
                     );
-                } else if (squawkBox[i].code == 18 || squawkBox[i].code == 19) {
+                } else if (
+                    (squawkmsg.code == 18 || squawkmsg.code == 19) &&
+                    squawkmsg.processed == 0
+                ) {
                     // REACTION DELETED
                     campaign_fid = squawkmsg.data[0];
                     uint campaign_uuid = campaignManager.campaignFidToUid(
@@ -133,7 +147,7 @@ contract SquawkProcessor {
                         actionType,
                         squawkmsg.user_followers
                     );
-                } else if (squawkBox[i].code == 20) {
+                } else if (squawkmsg.code == 20 && squawkmsg.processed == 0) {
                     // REPLY
                     campaign_fid = squawkmsg.data[0];
                     uint campaign_uuid = campaignManager.campaignFidToUid(
@@ -146,7 +160,7 @@ contract SquawkProcessor {
                         InfluencersActions.Cast_Reply,
                         squawkmsg.user_followers
                     );
-                } else if (squawkBox[i].code == 22) {
+                } else if (squawkmsg.code == 22 && squawkmsg.processed == 0) {
                     // MENTIONS
                     campaign_fid = squawkmsg.data[0];
                     uint campaign_uuid = campaignManager.campaignFidToUid(
@@ -159,7 +173,7 @@ contract SquawkProcessor {
                         InfluencersActions.Cast_Mention,
                         squawkmsg.user_followers
                     );
-                } else if (squawkBox[i].code == 21) {
+                } else if (squawkmsg.code == 21 && squawkmsg.processed == 0) {
                     // EMBEDS
                     // NEED campaign_uuid
 
@@ -182,7 +196,7 @@ contract SquawkProcessor {
                             squawkmsg.user_followers
                         );
                     }
-                } else if (squawkBox[i].code == 23) {
+                } else if (squawkmsg.code == 23 && squawkmsg.processed == 0) {
                     // TAGLINE
                     // NEED campaign_uuid
                     uint[2] memory campaign_data = campaignAssets
@@ -203,6 +217,8 @@ contract SquawkProcessor {
                         );
                     }
                 }
+
+                squawkBox[i].processed = 1; // Mark as processed 1: processed, 0: not processed
 
                 // Do the points awarding here end
                 //
@@ -266,14 +282,12 @@ contract SquawkProcessor {
     function changeAdmin(address _newAdmin) external onlyAdmin {
         admin = _newAdmin;
     }
-}
 
-//Do not forget in all the below we add 1 element as nonce and 1 more (the last element) as 0 for unprocessed and 1 for processed
-// for_sc = [created_at, 14, user_fid, user_followed, user_followers];                                                    //FOLLOW
-// for_sc = [created_at, 15, user_fid, user_unfollowed, user_followers];                                                  // UNFOLLOW
-// for_sc = [created_at, (data.reaction_type === 1? 16 : 17), user_fid, data.cast.hash, cast_author_fid, user_followers]. // handle_Reaction_Created
-// for_sc = [created_at, (data.reaction_type === 1? 18 : 19), user_fid, data.cast.hash, cast_author_fid, user_followers]  // handle_Reaction_Deleted
-// for_sc = [created_at, 20, user_fid, data.hash,  data.parent_hash, replyToAuthorFid, user_followers]                    // handle_CastCreated - REPLY
-// for_sc = [created_at, 21, data.author.fid, data.hash, embed, user_followers]                                           // handle_CastCreated - EMBEDS
-// for_sc = [created_at, 22, user_fid, data.hash, mentionedFid, user_followers]                                           // handle_CastCreated - MENTIONS
-// for_sc = [created_at, 23, data.author.fid, data.hash, tagline, user_followers ]
+    function toggleAdministrator(address newAdministrator) external onlyAdmin {
+        require(
+            admin != newAdministrator,
+            "action only for toggling external administrators"
+        );
+        isAdministrator[newAdministrator] = !isAdministrator[newAdministrator];
+    }
+}
