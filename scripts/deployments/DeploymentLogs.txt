@@ -1,0 +1,10 @@
+2024-06-29T15:32:34.142Z Deployed Smart Contract scName_CampaignManager: CampaignManager at address: 0x6f2A5E8dC8923aF146e435c834DBFDF3aE56cb5f on: base-sepolia network and ChainId: 84532 
+2024-06-29T15:32:34.142Z Deployed Smart Contract scName_InfluencersManager: InfluencersManager at address: 0x11935Ec6d371000cc10fEFDDf78349a04f104090 on: base-sepolia network and ChainId: 84532 
+2024-06-29T15:32:34.142Z Deployed Smart Contract scName_CampaignAssets: CampaignAssets at address: 0x0Ee5ef9e8551383D32E95Ae939aDaD4776Ff0DFb on: base-sepolia network and ChainId: 84532 
+2024-06-29T15:32:34.142Z Deployed Smart Contract scName_SquawkProcessor: SquawkProcessor at address: 0x3061DF5202881C6792220239cE45048EE4d1c32d on: base-sepolia network and ChainId: 84532 
+
+2024-06-29T15:39:15.140Z Deployed Smart Contract scName_CampaignManager: CampaignManager at address: 0xf6CE06B69Be0914F4Ba79710DeA42545F8D8388F on: base network and ChainId: 8453 
+2024-06-29T15:39:15.140Z Deployed Smart Contract scName_InfluencersManager: InfluencersManager at address: 0xAD36AED4170e648265e9E09dFd632E3Dba5B020b on: base network and ChainId: 8453 
+2024-06-29T15:39:15.140Z Deployed Smart Contract scName_CampaignAssets: CampaignAssets at address: 0x43BFe09b90fBd4f509C24663a4e4E64367b038AA on: base network and ChainId: 8453 
+2024-06-29T15:39:15.140Z Deployed Smart Contract scName_SquawkProcessor: SquawkProcessor at address: 0x85a8966d769dD83ae84f45a2609ba078b48f9D4B on: base network and ChainId: 8453 
+

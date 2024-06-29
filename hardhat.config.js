@@ -1,7 +1,7 @@
 require("dotenv").config()
 require("@nomicfoundation/hardhat-toolbox");
 
-const INFURA_API_KEY = process.env.INFURA_API_KEY;
+const RPC_BASE_KEY = process.env.VITE_RPC_BASE_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 
@@ -19,9 +19,9 @@ module.exports = {
       timeout: 60000,
     },
     "base": {
-      url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
+      url: `https://api.developer.coinbase.com/rpc/v1/base/${RPC_BASE_KEY}`,
       accounts: [PRIVATE_KEY],
-      chainId: 84531,
+      chainId: 8453,
       timeout: 60000,
     },
   },
