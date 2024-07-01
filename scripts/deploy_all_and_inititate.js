@@ -76,9 +76,10 @@ async function main() {
     //#region Intitiations
     console.log(`********************************************************`);
     console.log(`********************* Getting signers ***********************************`);
-    const [admin] = await ethers.getSigners();
+    const [admin, secondAccount] = await ethers.getSigners();
     const adminAddress = await admin.getAddress();
-    console.log(`Address of the admin is: ${adminAddress}\n`);
+    const secondAccountAddress = await secondAccount.getAddress();
+    console.log(`Address of the admin is: ${adminAddress} secondAccountAddress: ${secondAccountAddress} \n`);
 
     console.log(`********************* Instantiating smart contracts ***********************************`);
     const CampaignManagerr_raw = await hre.artifacts.readArtifact("contracts/CampaignManager.sol:CampaignManager")
@@ -124,6 +125,14 @@ async function main() {
 
     await CampaignAssets_sc.toggleAdministrator(deployedAddress_CampaignManager);
     await CampaignAssets_sc.toggleAdministrator(deployedAddress_SquawkProcessor);
+
+    //for testing purposes
+    await CampaignManager_sc.toggleAdministrator(secondAccountAddress);
+    await SquawkProcessor_sc.toggleAdministrator(secondAccountAddress);
+
+
+
+
     console.log(` ********************* setting up addresses for toggleAdministrator ends *********************`);
 
     console.log(`********************************************************`);
